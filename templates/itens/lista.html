@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "partials/paginacao.html" import paginar with context %}
+{% block titulo %}{{ secao.titulo }}{% endblock %}
+{% block conteudo %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">{{ secao.titulo }}{% if inativos %} <small class="text-muted fs-6">(inativos)</small>{% endif %}
+  </h1>
+  <a href="{{ url_for(secao.nome ~ '.novo') }}" class="btn btn-primary">
+    <i class="bi bi-plus-lg"></i> Novo {{ secao.singular|lower }}
+  </a>
+</div>
+
+<form method="get" class="row g-2 mb-3" role="search">
+  <div class="col-12 col-sm-6 col-lg-4">
+    <input type="search" name="q" value="{{ busca }}" class="form-control" placeholder="Buscar por nome"
+      aria-label="Buscar por nome">
+  </div>
+  <div class="col-auto">
+    <select name="status" class="form-select" aria-label="Situação">
+      <option value="">Ativos</option>
+      <option value="inativos" {% if inativos %}selected{% endif %}>Inativos</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search"></i> Buscar</button>
+  </div>
+</form>
+
+{% if paginacao.items %}
+<div class="card shadow-sm table-responsive">
+  <table class="table table-hover align-middle mb-0">
+    <thead class="table-light">
+      <tr>
+        <th>Nome</th>
+        <th>Cor</th>
+        {% if secao.tipo == "material" %}<th>Composição</th>{% else %}<th>Gênero</th>
+        <th>Tamanho</th>{% endif %}
+        <th class="text-end">Saldo</th>
+        <th class="text-end">Mínimo</th>
+        <th class="text-end">Preço</th>
+        <th>Situação</th>
+        <th class="text-end">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in paginacao.items %}
+      <tr>
+        <td>{{ item.nome }}</td>
+        <td>{{ item.cor or "-" }}</td>
+        {% if secao.tipo == "material" %}
+        <td>{{ item.composicao }}</td>
+        {% else %}
+        <td>{{ item.genero }}</td>
+        <td>{{ item.tamanho }}</td>
+        {% endif %}
+        <td class="text-end text-nowrap">{{ item.quantidade|numero }} {{ item.unidade_medida }}</td>
+        <td class="text-end">{{ item.estoque_minimo|numero }}</td>
+        <td class="text-end text-nowrap">{{ item.preco|moeda }}</td>
+        <td>
+          {% if not item.ativo %}<span class="badge text-bg-secondary">Inativo</span>
+          {% elif item.em_alerta %}<span class="badge text-bg-danger">Estoque baixo</span>
+          {% else %}<span class="badge text-bg-success">Normal</span>{% endif %}
+        </td>
+        <td class="text-end text-nowrap">
+          {% if item.ativo %}
+          <a href="{{ url_for(secao.nome ~ '.editar', item_id=item.id) }}" class="btn btn-sm btn-outline-primary"
+            title="Editar">
+            <i class="bi bi-pencil"></i><span class="visually-hidden">Editar {{ item.descricao }}</span>
+          </a>
+          <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir" data-bs-toggle="modal"
+            data-bs-target="#modalExclusao" data-url="{{ url_for(secao.nome ~ '.excluir', item_id=item.id) }}"
+            data-nome="{{ item.descricao }}">
+            <i class="bi bi-trash"></i><span class="visually-hidden">Excluir {{ item.descricao }}</span>
+          </button>
+          {% else %}
+          <form method="post" action="{{ url_for(secao.nome ~ '.reativar', item_id=item.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-arrow-counterclockwise"></i>
+              Reativar</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{{ paginar(paginacao, secao.nome ~ '.listar') }}
+{% else %}
+<div class="alert alert-light border">Nenhum {{ secao.singular|lower }} encontrado.</div>
+{% endif %}
+{% endblock %}

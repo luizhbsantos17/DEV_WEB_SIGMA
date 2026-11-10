@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "partials/linha_movimentacao.html" import linha_item %}
+{% block titulo %}Nova movimentação{% endblock %}
+{% block conteudo %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('movimentacoes.listar') }}">Movimentações</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Nova</li>
+  </ol>
+</nav>
+<h1 class="h3 mb-3">Nova movimentação</h1>
+
+{% if erros %}
+<div class="alert alert-danger" role="alert">
+  <p class="fw-semibold mb-1">Não foi possível registrar a movimentação:</p>
+  <ul class="mb-0">{% for erro in erros %}<li>{{ erro }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if not itens %}
+<div class="alert alert-info">Cadastre materiais ou produtos antes de registrar movimentações.</div>
+{% else %}
+<form method="post" action="{{ url_for('movimentacoes.registrar') }}" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <span class="form-label d-block">Tipo <span class="text-danger">*</span></span>
+          <div class="btn-group w-100" role="group" aria-label="Tipo de movimentação">
+            <input type="radio" class="btn-check" name="tipo" id="tipoEntrada" value="ENTRADA" autocomplete="off" {% if
+              valores.get('tipo') !='SAIDA' %}checked{% endif %}>
+            <label class="btn btn-outline-success" for="tipoEntrada"><i class="bi bi-box-arrow-in-down"></i>
+              Entrada</label>
+            <input type="radio" class="btn-check" name="tipo" id="tipoSaida" value="SAIDA" autocomplete="off" {% if
+              valores.get('tipo')=='SAIDA' %}checked{% endif %}>
+            <label class="btn btn-outline-danger" for="tipoSaida"><i class="bi bi-box-arrow-up"></i> Saída</label>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label for="data" class="form-label">Data <span class="text-danger">*</span></label>
+          <input type="date" id="data" name="data" class="form-control" value="{{ valores.get('data', '') }}"
+            max="{{ hoje() }}">
+        </div>
+        <div class="col-md-5">
+          <label for="observacao" class="form-label">Observação</label>
+          <input type="text" id="observacao" name="observacao" class="form-control" maxlength="255"
+            value="{{ valores.get('observacao', '') }}" placeholder="Ex.: compra, venda, uso na produção">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Itens</span>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="adicionarLinha">
+        <i class="bi bi-plus-lg"></i> Adicionar item
+      </button>
+    </div>
+    <div class="card-body" id="linhas">
+      {% for linha in linhas %}{{ linha_item(itens, linha) }}{% endfor %}
+    </div>
+  </div>
+
+  <template id="modeloLinha">{{ linha_item(itens, {}) }}</template>
+
+  <div class="d-flex gap-2 justify-content-end">
+    <a href="{{ url_for('movimentacoes.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-success" id="botaoRegistrar">Registrar entrada</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

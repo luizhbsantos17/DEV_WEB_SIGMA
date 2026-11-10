@@ -1,0 +1,25 @@
+{% macro linha_item(itens, linha) %}
+<div class="row g-2 align-items-end mb-2 linha-item">
+  <div class="col-12 col-md-7">
+    <label class="form-label small mb-1">Item</label>
+    <select name="item_id" class="form-select" aria-label="Item">
+      <option value="">Selecione...</option>
+      {% for item in itens %}
+      <option value="{{ item.id }}" {% if linha.get('item_id')|string==item.id|string %}selected{% endif %}>
+        {{ item.descricao }} ({{ item.tipo }}) · saldo {{ item.quantidade|numero }} {{ item.unidade_medida }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-8 col-md-3">
+    <label class="form-label small mb-1">Quantidade</label>
+    <input type="text" inputmode="decimal" name="quantidade" class="form-control"
+      value="{{ linha.get('quantidade', '') }}" placeholder="0" aria-label="Quantidade">
+  </div>
+  <div class="col-4 col-md-2">
+    <button type="button" class="btn btn-outline-danger w-100 remover-linha" aria-label="Remover item">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+</div>
+{% endmacro %}

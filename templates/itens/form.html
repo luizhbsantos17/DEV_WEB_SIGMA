@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "partials/campos.html" import campo, selecao %}
+{% block titulo %}{{ "Editar" if item else "Novo" }} {{ secao.singular|lower }}{% endblock %}
+{% block conteudo %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for(secao.nome ~ '.listar') }}">{{ secao.titulo }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ "Editar" if item else "Novo" }}</li>
+  </ol>
+</nav>
+<h1 class="h3 mb-3">{{ "Editar" if item else "Novo" }} {{ secao.singular|lower }}</h1>
+
+<form method="post" action="{{ acao }}" class="card shadow-sm" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="card-body">
+    <p class="text-muted small">Campos com <span class="text-danger">*</span> são obrigatórios.</p>
+    <div class="row g-3">
+      {{ campo("nome", "Nome", valores, erros, obrigatorio=true, maxlength=100, largura="col-md-8") }}
+      {{ campo("cor", "Cor", valores, erros, maxlength=40, largura="col-md-4") }}
+
+      {% if secao.tipo == "material" %}
+      {{ campo("composicao", "Composição", valores, erros, obrigatorio=true, maxlength=100,
+      placeholder="Ex.: 100% algodão", largura="col-12") }}
+      {% else %}
+      {{ selecao("genero", "Gênero", GENEROS, valores, erros, obrigatorio=true) }}
+      {{ campo("tamanho", "Tamanho", valores, erros, obrigatorio=true, maxlength=10, lista="sugestoesTamanho") }}
+      <datalist id="sugestoesTamanho">
+        {% for tamanho in TAMANHOS_SUGERIDOS %}<option value="{{ tamanho }}">{% endfor %}
+      </datalist>
+      {% endif %}
+
+      {{ selecao("unidade_medida", "Unidade de medida", UNIDADES, valores, erros, obrigatorio=true, largura="col-md-4")
+      }}
+      {{ campo("estoque_minimo", "Estoque mínimo", valores, erros, obrigatorio=true, inputmode="decimal",
+      placeholder="0", largura="col-md-4", ajuda="Com saldo igual ou abaixo deste valor, o item entra em alerta.") }}
+      {{ campo("preco", "Preço unitário (R$)", valores, erros, inputmode="decimal", placeholder="0,00",
+      largura="col-md-4") }}
+      {{ campo("data_compra", "Data da compra", valores, erros, tipo="date", largura="col-md-4") }}
+
+      {% if item %}
+      <div class="col-md-4">
+        <span class="form-label d-block">Saldo atual</span>
+        <p class="form-control-plaintext fw-semibold py-1 mb-0">{{ item.quantidade|numero }} {{ item.unidade_medida }}
+        </p>
+        <div class="form-text">O saldo só muda por movimentação.</div>
+      </div>
+      {% else %}
+      {{ campo("quantidade_inicial", "Quantidade inicial", valores, erros, inputmode="decimal", placeholder="0",
+      largura="col-md-4", ajuda="Se informada, gera uma entrada no histórico.") }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-footer d-flex gap-2 justify-content-end">
+    <a href="{{ url_for(secao.nome ~ '.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Salvar</button>
+  </div>
+</form>
+{% endblock %}

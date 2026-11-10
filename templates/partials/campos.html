@@ -1,0 +1,32 @@
+{% macro campo(nome, rotulo, valores, erros, obrigatorio=false, tipo="text", placeholder="", maxlength=none,
+inputmode=none, lista=none, ajuda=none, largura="col-md-6") %}
+<div class="{{ largura }}">
+  <label for="{{ nome }}" class="form-label">
+    {{ rotulo }}{% if obrigatorio %} <span class="text-danger">*</span>{% endif %}
+  </label>
+  <input type="{{ tipo }}" id="{{ nome }}" name="{{ nome }}"
+    class="form-control{% if erros.get(nome) %} is-invalid{% endif %}" value="{{ valores.get(nome, '') }}" {% if
+    placeholder %}placeholder="{{ placeholder }}" {% endif %} {% if maxlength %}maxlength="{{ maxlength }}" {% endif %}
+    {% if inputmode %}inputmode="{{ inputmode }}" {% endif %} {% if lista %}list="{{ lista }}" {% endif %}>
+  {% if erros.get(nome) %}
+  <div class="invalid-feedback">{{ erros[nome] }}</div>
+  {% elif ajuda %}
+  <div class="form-text">{{ ajuda }}</div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro selecao(nome, rotulo, opcoes, valores, erros, obrigatorio=false, largura="col-md-6") %}
+<div class="{{ largura }}">
+  <label for="{{ nome }}" class="form-label">
+    {{ rotulo }}{% if obrigatorio %} <span class="text-danger">*</span>{% endif %}
+  </label>
+  <select id="{{ nome }}" name="{{ nome }}" class="form-select{% if erros.get(nome) %} is-invalid{% endif %}">
+    <option value="">Selecione...</option>
+    {% for opcao in opcoes %}
+    <option value="{{ opcao }}" {% if valores.get(nome)==opcao %}selected{% endif %}>{{ opcao }}</option>
+    {% endfor %}
+  </select>
+  {% if erros.get(nome) %}<div class="invalid-feedback">{{ erros[nome] }}</div>{% endif %}
+</div>
+{% endmacro %}
