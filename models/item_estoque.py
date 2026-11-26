@@ -1,9 +1,16 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint
+from sqlalchemy import CheckConstraint, or_
+from sqlalchemy.exc import IntegrityError
 
-from models.conversores import formatar_numero, para_data, para_decimal, texto
+from models.conversores import (
+    decimal_cabe_no_estoque,
+    decimal_para_formulario,
+    para_data,
+    para_decimal,
+    texto,
+)
 from models.db import db
 
 UNIDADES = ["un", "m", "kg", "g", "rolo", "cx", "pç", "par"]
@@ -28,6 +35,8 @@ class ItemEstoque(db.Model):
     preco = db.Column(db.Numeric(10, 2))
     data_compra = db.Column(db.Date)
     estoque_minimo = db.Column(db.Numeric(12, 3), nullable=False)
+    estoque_medio = db.Column(db.Numeric(12, 3))
+    estoque_maximo = db.Column(db.Numeric(12, 3))
     quantidade = db.Column(db.Numeric(12, 3), nullable=False, default=0)
     ativo = db.Column(db.Boolean, nullable=False, default=True)
     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.now)
@@ -47,6 +56,8 @@ class ItemEstoque(db.Model):
         "preco",
         "data_compra",
         "estoque_minimo",
+        "estoque_medio",
+        "estoque_maximo",
     ]
 
     def __init__(self, **kwargs):
@@ -63,6 +74,22 @@ class ItemEstoque(db.Model):
     def em_alerta(self):
         """RN05 / D1: alerta quando o saldo atinge (fica menor ou igual a) o mínimo."""
         return self.ativo and self.quantidade <= self.estoque_minimo
+
+    @property
+    def abaixo_do_medio(self):
+        return (
+            self.ativo
+            and self.estoque_medio is not None
+            and self.estoque_minimo < self.quantidade < self.estoque_medio
+        )
+
+    @property
+    def acima_do_maximo(self):
+        return (
+            self.ativo
+            and self.estoque_maximo is not None
+            and self.quantidade > self.estoque_maximo
+        )
 
     def possui_movimentacoes(self):
         from models.movimentacao import ItemMovimentado
@@ -102,7 +129,28 @@ class ItemEstoque(db.Model):
             obrigatorio=True,
             vazio="Informe o estoque mínimo.",
             negativo="O estoque mínimo não pode ser negativo.",
+            quantidade=True,
         )
+        valores["estoque_medio"] = cls._ler_decimal(
+            dados, "estoque_medio", erros,
+            negativo="O estoque médio não pode ser negativo.", quantidade=True,
+        )
+        valores["estoque_maximo"] = cls._ler_decimal(
+            dados, "estoque_maximo", erros,
+            negativo="O estoque máximo não pode ser negativo.", quantidade=True,
+        )
+        minimo, medio, maximo = (
+            valores[campo] if campo not in erros else None
+            for campo in ("estoque_minimo", "estoque_medio", "estoque_maximo")
+        )
+        if minimo is not None and medio is not None and medio < minimo:
+            erros["estoque_medio"] = "O estoque médio deve ser igual ou superior ao mínimo."
+        if maximo is not None:
+            if minimo is not None and maximo < minimo:
+                erros["estoque_maximo"] = "O estoque máximo deve ser igual ou superior ao mínimo."
+            elif medio is not None and maximo < medio:
+                erros["estoque_maximo"] = "O estoque máximo deve ser igual ou superior ao médio."
+
         valores["preco"] = cls._ler_decimal(
             dados, "preco", erros, negativo="O preço não pode ser negativo."
         )
@@ -122,12 +170,15 @@ class ItemEstoque(db.Model):
                 "quantidade_inicial",
                 erros,
                 negativo="A quantidade inicial não pode ser negativa.",
+                quantidade=True,
             )
 
         return valores, erros
 
     @staticmethod
-    def _ler_decimal(dados, campo, erros, obrigatorio=False, vazio="", negativo=""):
+    def _ler_decimal(
+        dados, campo, erros, obrigatorio=False, vazio="", negativo="", quantidade=False
+    ):
         try:
             valor = para_decimal(dados.get(campo))
         except ValueError:
@@ -135,8 +186,11 @@ class ItemEstoque(db.Model):
             return None
         if valor is None and obrigatorio:
             erros[campo] = vazio
-        elif valor is not None and valor < 0:
-            erros[campo] = negativo
+        elif valor is not None:
+            if valor < 0:
+                erros[campo] = negativo
+            elif quantidade and not decimal_cabe_no_estoque(valor):
+                erros[campo] = "Informe até nove dígitos inteiros e três casas decimais."
         return valor
 
     def preencher(self, valores):
@@ -149,9 +203,11 @@ class ItemEstoque(db.Model):
             "nome": self.nome,
             "cor": self.cor or "",
             "unidade_medida": self.unidade_medida,
-            "preco": formatar_numero(self.preco) if self.preco is not None else "",
+            "preco": decimal_para_formulario(self.preco),
             "data_compra": self.data_compra.isoformat() if self.data_compra else "",
-            "estoque_minimo": formatar_numero(self.estoque_minimo),
+            "estoque_minimo": decimal_para_formulario(self.estoque_minimo),
+            "estoque_medio": decimal_para_formulario(self.estoque_medio),
+            "estoque_maximo": decimal_para_formulario(self.estoque_maximo),
         }
 
     # ---------- operações ----------
@@ -199,7 +255,15 @@ class ItemEstoque(db.Model):
             db.session.commit()
             return "inativado"
         db.session.delete(self)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            if not self.possui_movimentacoes():
+                raise
+            self.ativo = False
+            db.session.commit()
+            return "inativado"
         return "excluido"
 
     def reativar(self):
@@ -230,12 +294,21 @@ class ItemEstoque(db.Model):
         from models.produto import Produto
 
         alertas = (
-            cls.query.filter(cls.ativo.is_(True), cls.quantidade <= cls.estoque_minimo)
+            cls.query.filter(
+                cls.ativo.is_(True),
+                or_(
+                    cls.quantidade <= cls.estoque_minimo,
+                    cls.quantidade < cls.estoque_medio,
+                    cls.quantidade > cls.estoque_maximo,
+                ),
+            )
             .order_by(cls.nome)
             .all()
         )
         return {
             "total_materiais": Material.query.filter_by(ativo=True).count(),
             "total_produtos": Produto.query.filter_by(ativo=True).count(),
-            "alertas": alertas,
+            "alertas_baixo": [item for item in alertas if item.em_alerta],
+            "alertas_medio": [item for item in alertas if item.abaixo_do_medio],
+            "alertas_maximo": [item for item in alertas if item.acima_do_maximo],
         }

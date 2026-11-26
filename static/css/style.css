@@ -42,3 +42,60 @@ body {
 .conteudo {
   min-width: 0;
 }
+
+.tela-login {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+.login-identidade,
+.login-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+}
+
+.login-identidade {
+  flex: 2;
+  min-width: 260px;
+  background-color: var(--sigma-escuro);
+  color: #fff;
+  text-align: center;
+}
+
+.login-icone {
+  display: block;
+  margin-bottom: .75rem;
+  color: #94c5ff;
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.login-area {
+  flex: 3;
+  min-width: 0;
+  background-color: #fff;
+}
+
+.login-formulario {
+  width: 100%;
+  max-width: 24rem;
+}
+
+@media (max-width: 767.98px) {
+  .tela-login {
+    flex-direction: column;
+  }
+
+  .login-identidade {
+    flex: none;
+    min-width: 0;
+  }
+
+  .login-area {
+    flex: 1;
+  }
+}

@@ -33,11 +33,14 @@
       <tr>
         <th>Nome</th>
         <th>Cor</th>
-        {% if secao.tipo == "material" %}<th>Composição</th>{% else %}<th>Gênero</th>
-        <th>Tamanho</th>{% endif %}
+        {% if secao.tipo == "material" %}<th>Composição</th>{% else %}<th>Categoria</th>
+        <th>Gênero</th><th>Tamanho</th>{% endif %}
         <th class="text-end">Saldo</th>
         <th class="text-end">Mínimo</th>
+        <th class="text-end">Médio</th>
+        <th class="text-end">Máximo</th>
         <th class="text-end">Preço</th>
+        <th class="text-nowrap">Cadastrado em</th>
         <th>Situação</th>
         <th class="text-end">Ações</th>
       </tr>
@@ -50,15 +53,21 @@
         {% if secao.tipo == "material" %}
         <td>{{ item.composicao }}</td>
         {% else %}
-        <td>{{ item.genero }}</td>
+        <td>{{ item.categoria }}</td>
+        <td>{{ item.genero or "Não informado" }}</td>
         <td>{{ item.tamanho }}</td>
         {% endif %}
         <td class="text-end text-nowrap">{{ item.quantidade|numero }} {{ item.unidade_medida }}</td>
         <td class="text-end">{{ item.estoque_minimo|numero }}</td>
+        <td class="text-end">{{ item.estoque_medio|numero }}</td>
+        <td class="text-end">{{ item.estoque_maximo|numero }}</td>
         <td class="text-end text-nowrap">{{ item.preco|moeda }}</td>
+        <td class="text-nowrap">{{ item.criado_em|data_hora_br }}</td>
         <td>
           {% if not item.ativo %}<span class="badge text-bg-secondary">Inativo</span>
           {% elif item.em_alerta %}<span class="badge text-bg-danger">Estoque baixo</span>
+          {% elif item.abaixo_do_medio %}<span class="badge text-bg-warning">Abaixo do estoque médio</span>
+          {% elif item.acima_do_maximo %}<span class="badge text-bg-warning">Acima do máximo</span>
           {% else %}<span class="badge text-bg-success">Normal</span>{% endif %}
         </td>
         <td class="text-end text-nowrap">

@@ -28,7 +28,7 @@ def seed_command():
             data_compra=hoje - timedelta(days=20),
         )
 
-    def produto(nome, cor, preco, minimo, genero, tamanho):
+    def produto(nome, cor, preco, minimo, genero, tamanho, categoria="Geral"):
         return Produto(
             nome=nome,
             cor=cor,
@@ -37,6 +37,7 @@ def seed_command():
             estoque_minimo=Decimal(minimo),
             genero=genero,
             tamanho=tamanho,
+            categoria=categoria,
         )
 
     malha = material(
@@ -57,7 +58,7 @@ def seed_command():
     camiseta_m = produto("Camiseta básica", "Branco", "39.90", "10", "Unissex", "M")
     camiseta_g = produto("Camiseta básica", "Branco", "39.90", "10", "Unissex", "G")
     calca = produto("Calça jeans", "Azul", "129.90", "5", "Feminino", "40")
-    vestido = produto("Vestido infantil", "Rosa", "79.90", "4", "Infantil", "Único")
+    vestido = produto("Vestido infantil", "Rosa", "79.90", "4", "Feminino", "Único", "Infantil")
     bermuda = produto("Bermuda sarja", "Cáqui", "69.90", "5", "Masculino", "42")
 
     db.session.add_all(

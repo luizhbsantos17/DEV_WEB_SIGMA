@@ -1,0 +1,21 @@
+{% extends "auth/entrada.html" %}
+{% block titulo %}Configuração inicial{% endblock %}
+{% block titulo_acesso %}Configuração inicial{% endblock %}
+{% block formulario_acesso %}
+<p>Defina a senha da conta de administrador <strong>{{ login }}</strong>.</p>
+<form method="post" action="{{ url_for('auth.configuracao_inicial') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="mb-3">
+    <label class="form-label" for="senha">Senha</label>
+    <input class="form-control" id="senha" name="senha" type="password" autocomplete="new-password"
+      minlength="{{ SENHA_MINIMA }}" maxlength="{{ SENHA_MAXIMA }}" aria-describedby="senha-ajuda" required autofocus>
+    <div class="form-text" id="senha-ajuda">Use pelo menos {{ SENHA_MINIMA }} caracteres.</div>
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="confirmacao">Confirme a senha</label>
+    <input class="form-control" id="confirmacao" name="confirmacao" type="password" autocomplete="new-password"
+      minlength="{{ SENHA_MINIMA }}" maxlength="{{ SENHA_MAXIMA }}" required>
+  </div>
+  <button type="submit" class="btn btn-primary w-100 mt-2">Criar conta e entrar</button>
+</form>
+{% endblock %}

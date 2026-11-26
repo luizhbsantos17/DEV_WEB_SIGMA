@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
@@ -14,4 +15,9 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_TIME_LIMIT = None
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE") == "1"
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
+    SESSION_REFRESH_EACH_REQUEST = False
     ITENS_POR_PAGINA = 20

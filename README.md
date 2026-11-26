@@ -10,7 +10,8 @@ Disciplina de Desenvolvimento Web — IFES, turma 2024/2, grupo G3.
 - Rafael Marques
 
 ## Tecnologias
-Python 3.10+, Flask, Flask-SQLAlchemy, Flask-Migrate (Alembic), Flask-WTF (CSRF), SQLite, Bootstrap 5 e Bootstrap Icons.
+Python 3.10+, Flask, Flask-SQLAlchemy, Flask-Migrate (Alembic), Flask-WTF (CSRF),
+Argon2id, SQLite, Bootstrap 5 e Bootstrap Icons.
 
 ## Instalação
 
@@ -36,15 +37,29 @@ Edite o `.env` e troque a `SECRET_KEY`. Para gerar uma chave:
 
 ## Criar o banco de dados
 ```
-flask db upgrade   # cria as tabelas a partir das migrations
-flask seed         # opcional: dados de exemplo
+flask db upgrade
 ```
+
+O estoque começa vazio. O comando `flask seed` é opcional para demonstrações.
 
 ## Executar
 ```
 flask run
 ```
-Acesse http://127.0.0.1:5000
+Acesse http://127.0.0.1:5000 no computador que executa o SIGMA. No primeiro
+acesso, defina e confirme uma senha de pelo menos 8 caracteres para a conta
+`admin`. Depois de entrar, abra **Funcionários** para criar as contas de
+operação. Cada funcionário deve trocar a senha temporária no primeiro acesso.
+
+Para uma instalação acessada pela rede, crie a primeira conta pelo terminal
+com `flask criar-admin admin` antes de disponibilizar o SIGMA. Sirva o sistema
+por HTTPS e defina `SESSION_COOKIE_SECURE=1` no ambiente.
+
+Para executar os testes com bancos SQLite temporários:
+
+```
+python -m unittest discover -s tests -v
+```
 
 ## Estrutura (MVC)
 - `models/`: acesso ao SQLite (SQLAlchemy), validações e regras de negócio
@@ -58,13 +73,14 @@ Acesse http://127.0.0.1:5000
 | RN02: campos obrigatórios | `validar()` de cada Model |
 | RN03: movimentações definitivas | sem rotas de exclusão + listener que bloqueia delete/update |
 | RN04: saldo só muda por movimentação | quantidade fora de `CAMPOS_PERMITIDOS` |
-| RN05: alerta quando saldo ≤ mínimo | `ItemEstoque.em_alerta` e dashboard |
+| RN05: avisos conforme os limites do item | Saldo ≤ mínimo, entre mínimo e médio ou acima do máximo |
 | RN06: item com movimentação é inativado | `ItemEstoque.excluir_ou_inativar` |
 
 ## Segurança e correspondência com o barema
 | Barema (CI4) | SIGMA (Flask) |
 |---|---|
 | filtro csrf + `csrf_field()` | `CSRFProtect` global + `csrf_token()` em todo formulário |
+| autenticação e autorização | Sessão individual e verificação de conta ativa e perfil no servidor |
 | `esc()` | autoescape do Jinja2 (nenhum `|safe` no projeto) |
 | `allowedFields` | `CAMPOS_PERMITIDOS` em cada Model |
 | `(:num)` | `<int:item_id>` |

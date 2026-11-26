@@ -1,15 +1,17 @@
-{% macro linha_item(itens, linha) %}
+{% macro linha_item(item, linha) %}
 <div class="row g-2 align-items-end mb-2 linha-item">
   <div class="col-12 col-md-7">
-    <label class="form-label small mb-1">Item</label>
-    <select name="item_id" class="form-select" aria-label="Item">
-      <option value="">Selecione...</option>
-      {% for item in itens %}
-      <option value="{{ item.id }}" {% if linha.get('item_id')|string==item.id|string %}selected{% endif %}>
-        {{ item.descricao }} ({{ item.tipo }}) · saldo {{ item.quantidade|numero }} {{ item.unidade_medida }}
-      </option>
-      {% endfor %}
-    </select>
+    <span class="form-label small mb-1 d-block">Item</span>
+    <input type="hidden" name="item_id" value="{{ item.id if item else '' }}">
+    <button type="button" class="btn btn-outline-secondary text-start w-100 d-flex align-items-center
+      justify-content-between gap-2 selecionar-item" data-bs-toggle="modal" data-bs-target="#seletorItens"
+      data-tipo-item="{{ item.tipo if item else '' }}" aria-haspopup="dialog">
+      <span class="overflow-hidden">
+        <span class="d-block text-truncate nome-item">{{ item.descricao if item else "Selecionar item" }}</span>
+        <span class="d-block small saldo-item">{% if item %}Saldo {{ item.quantidade|numero }} {{ item.unidade_medida }}{% endif %}</span>
+      </span>
+      <i class="bi bi-chevron-down" aria-hidden="true"></i>
+    </button>
   </div>
   <div class="col-8 col-md-3">
     <label class="form-label small mb-1">Quantidade</label>

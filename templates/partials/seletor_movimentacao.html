@@ -1,0 +1,49 @@
+{% set tipos = [("material", "Materiais"), ("produto", "Produtos")] %}
+<div class="modal fade" id="seletorItens" tabindex="-1" aria-labelledby="tituloSeletorItens" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="tituloSeletorItens">Selecionar item</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="px-3 pt-3">
+        <div class="nav nav-tabs mb-3" role="tablist" aria-label="Tipos de item">
+          {% for tipo, rotulo in tipos %}
+          <button type="button" class="nav-link{% if loop.first %} active{% endif %}" id="aba-{{ tipo }}"
+            data-bs-toggle="tab" data-bs-target="#painel-{{ tipo }}" data-tipo-item="{{ tipo }}"
+            role="tab" aria-controls="painel-{{ tipo }}" aria-selected="{{ 'true' if loop.first else 'false' }}">
+            {{ rotulo }}
+          </button>
+          {% endfor %}
+        </div>
+        <label class="visually-hidden" for="buscaSeletorItens">Pesquisar itens</label>
+        <input type="search" class="form-control" id="buscaSeletorItens" placeholder="Pesquisar por nome, cor ou tamanho"
+          autocomplete="off">
+      </div>
+      <div class="modal-body">
+        <div class="tab-content">
+          {% for tipo, rotulo in tipos %}
+          <div id="painel-{{ tipo }}" class="tab-pane{% if loop.first %} show active{% endif %}" role="tabpanel"
+            aria-labelledby="aba-{{ tipo }}">
+            {% set opcoes = itens|selectattr("tipo", "equalto", tipo)|list %}
+            <ul class="list-group list-group-flush mb-0">
+              {% for item in opcoes %}
+              <li class="list-group-item p-0 opcao-item">
+                <button type="button" class="btn list-group-item-action text-start px-2 py-2" data-item-id="{{ item.id }}"
+                  data-tipo-item="{{ tipo }}">
+                  <span class="d-block fw-semibold nome-item">{{ item.descricao }}</span>
+                  <span class="d-block small text-body-secondary saldo-item">Saldo {{ item.quantidade|numero }} {{ item.unidade_medida }}</span>
+                </button>
+              </li>
+              {% endfor %}
+            </ul>
+            <p class="text-body-secondary mb-0 sem-resultados" role="status"{% if opcoes %} hidden{% endif %}>
+              {{ "Nenhum material encontrado." if tipo == "material" else "Nenhum produto encontrado." }}
+            </p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

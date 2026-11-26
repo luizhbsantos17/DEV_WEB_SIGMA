@@ -22,8 +22,10 @@
       {{ campo("composicao", "Composição", valores, erros, obrigatorio=true, maxlength=100,
       placeholder="Ex.: 100% algodão", largura="col-12") }}
       {% else %}
-      {{ selecao("genero", "Gênero", GENEROS, valores, erros, obrigatorio=true) }}
-      {{ campo("tamanho", "Tamanho", valores, erros, obrigatorio=true, maxlength=10, lista="sugestoesTamanho") }}
+      {{ selecao("categoria", "Categoria", CATEGORIAS, valores, erros, obrigatorio=true, largura="col-md-4") }}
+      {{ selecao("genero", "Gênero", GENEROS, valores, erros, obrigatorio=true, largura="col-md-4") }}
+      {{ campo("tamanho", "Tamanho", valores, erros, obrigatorio=true, maxlength=10, lista="sugestoesTamanho",
+      largura="col-md-4") }}
       <datalist id="sugestoesTamanho">
         {% for tamanho in TAMANHOS_SUGERIDOS %}<option value="{{ tamanho }}">{% endfor %}
       </datalist>
@@ -31,11 +33,16 @@
 
       {{ selecao("unidade_medida", "Unidade de medida", UNIDADES, valores, erros, obrigatorio=true, largura="col-md-4")
       }}
-      {{ campo("estoque_minimo", "Estoque mínimo", valores, erros, obrigatorio=true, inputmode="decimal",
-      placeholder="0", largura="col-md-4", ajuda="Com saldo igual ou abaixo deste valor, o item entra em alerta.") }}
       {{ campo("preco", "Preço unitário (R$)", valores, erros, inputmode="decimal", placeholder="0,00",
       largura="col-md-4") }}
       {{ campo("data_compra", "Data da compra", valores, erros, tipo="date", largura="col-md-4") }}
+
+      {{ campo("estoque_minimo", "Estoque mínimo", valores, erros, obrigatorio=true, inputmode="decimal",
+      placeholder="0", largura="col-md-4", ajuda="Com saldo igual ou abaixo deste valor, o item entra em alerta.") }}
+      {{ campo("estoque_medio", "Estoque médio", valores, erros, inputmode="decimal", largura="col-md-4",
+      ajuda="Saldo de referência para o aviso de estoque abaixo do médio.") }}
+      {{ campo("estoque_maximo", "Estoque máximo", valores, erros, inputmode="decimal", largura="col-md-4",
+      ajuda="Com saldo acima deste valor, o item entra em alerta.") }}
 
       {% if item %}
       <div class="col-md-4">

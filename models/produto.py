@@ -2,7 +2,8 @@ from models.conversores import texto
 from models.db import db
 from models.item_estoque import ItemEstoque
 
-GENEROS = ["Masculino", "Feminino", "Unissex", "Infantil"]
+CATEGORIAS = ["Geral", "Infantil"]
+GENEROS = ["Masculino", "Feminino", "Unissex"]
 TAMANHOS_SUGERIDOS = [
     "PP",
     "P",
@@ -25,18 +26,22 @@ class Produto(ItemEstoque):
     """Peça acabada, destinada à venda."""
 
     __tablename__ = "produtos"
+    __table_args__ = (
+        db.CheckConstraint("categoria IN ('Geral', 'Infantil')", name="ck_produto_categoria"),
+    )
     id = db.Column(
         db.Integer,
         db.ForeignKey("itens_estoque.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    genero = db.Column(db.String(20), nullable=False)
+    genero = db.Column(db.String(20), nullable=True)
+    categoria = db.Column(db.String(20), nullable=False, server_default="Geral")
     tamanho = db.Column(db.String(10), nullable=False)
 
     __mapper_args__ = {"polymorphic_identity": "produto"}
 
     NOME_TIPO = "produto"
-    CAMPOS_PERMITIDOS = ItemEstoque.CAMPOS_PERMITIDOS + ["genero", "tamanho"]
+    CAMPOS_PERMITIDOS = ItemEstoque.CAMPOS_PERMITIDOS + ["genero", "categoria", "tamanho"]
 
     @property
     def descricao(self):
@@ -53,6 +58,11 @@ class Produto(ItemEstoque):
             erros["genero"] = "Selecione o gênero do produto."
         valores["genero"] = genero
 
+        categoria = texto(dados, "categoria") or "Geral"
+        if categoria not in CATEGORIAS:
+            erros["categoria"] = "Selecione uma categoria válida."
+        valores["categoria"] = categoria
+
         tamanho = texto(dados, "tamanho")
         if not tamanho:
             erros["tamanho"] = "Informe o tamanho do produto."
@@ -64,6 +74,7 @@ class Produto(ItemEstoque):
 
     def para_formulario(self):
         valores = super().para_formulario()
-        valores["genero"] = self.genero
+        valores["genero"] = self.genero or ""
+        valores["categoria"] = self.categoria
         valores["tamanho"] = self.tamanho
         return valores
