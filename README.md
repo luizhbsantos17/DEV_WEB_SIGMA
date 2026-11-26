@@ -16,7 +16,7 @@ Argon2id, SQLite, Bootstrap 5 e Bootstrap Icons.
 ## Instalação
 
 ### Windows (PowerShell)
-```
+```bash
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -25,7 +25,7 @@ copy .env.example .env
 Se o PowerShell bloquear a ativação, rode `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` ou use o `cmd` com `.venv\Scripts\activate.bat`.
 
 ### Linux / macOS
-```
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -36,14 +36,14 @@ Edite o `.env` e troque a `SECRET_KEY`. Para gerar uma chave:
 `python -c "import secrets; print(secrets.token_hex(32))"`
 
 ## Criar o banco de dados
-```
+```bash
 flask db upgrade
 ```
 
 O estoque começa vazio. O comando `flask seed` é opcional para demonstrações.
 
 ## Executar
-```
+```bash
 flask run
 ```
 Acesse http://127.0.0.1:5000 no computador que executa o SIGMA. No primeiro
