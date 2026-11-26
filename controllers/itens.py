@@ -61,7 +61,7 @@ def criar_blueprint_itens(nome, modelo, titulo, singular):
 
     @bp.get("/novo")
     def novo():
-        return exibir_formulario({}, {})
+        return exibir_formulario({"categoria": "Geral"} if modelo.NOME_TIPO == "produto" else {}, {})
 
     @bp.post("/salvar")
     def salvar():

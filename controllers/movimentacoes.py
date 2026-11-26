@@ -33,6 +33,18 @@ def listar():
     )
 
 
+def exibir_formulario(valores, linhas, erros):
+    itens = ItemEstoque.ativos()
+    return render_template(
+        "movimentacoes/nova.html",
+        itens=itens,
+        itens_por_id={str(item.id): item for item in itens},
+        valores=valores,
+        linhas=linhas,
+        erros=erros,
+    )
+
+
 @bp.get("/nova")
 def nova():
     valores = {
@@ -41,13 +53,7 @@ def nova():
         "observacao": "",
     }
     linhas = [{"item_id": request.args.get("item_id", ""), "quantidade": ""}]
-    return render_template(
-        "movimentacoes/nova.html",
-        itens=ItemEstoque.ativos(),
-        valores=valores,
-        linhas=linhas,
-        erros=[],
-    )
+    return exibir_formulario(valores, linhas, [])
 
 
 @bp.post("/registrar")
@@ -60,12 +66,6 @@ def registrar():
                 request.form.getlist("item_id"), request.form.getlist("quantidade")
             )
         ] or [{}]
-        return render_template(
-            "movimentacoes/nova.html",
-            itens=ItemEstoque.ativos(),
-            valores=request.form,
-            linhas=linhas,
-            erros=erros,
-        )
+        return exibir_formulario(request.form, linhas, erros)
     flash(f"{movimentacao.tipo_rotulo} registrada com sucesso.", "success")
     return redirect(url_for("movimentacoes.listar"))

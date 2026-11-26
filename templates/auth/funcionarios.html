@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block titulo %}Funcionários{% endblock %}
+{% block conteudo %}
+<h1 class="h3 mb-3">Funcionários</h1>
+
+<section class="card shadow-sm mb-4">
+  <h2 class="card-header h6 mb-0">Criar conta</h2>
+  <form method="post" action="{{ url_for('admin.criar_funcionario') }}" class="card-body">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="login">Login</label>
+        <input class="form-control" id="login" name="login" minlength="3" maxlength="40" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="senha">Senha temporária</label>
+        <input class="form-control" id="senha" name="senha" type="password" autocomplete="new-password"
+          minlength="{{ SENHA_MINIMA }}" maxlength="{{ SENHA_MAXIMA }}" required>
+      </div>
+      <div class="col-md-auto">
+        <button type="submit" class="btn btn-primary">Criar conta</button>
+      </div>
+    </div>
+  </form>
+</section>
+
+{% if funcionarios %}
+<div class="card shadow-sm table-responsive">
+  <table class="table align-middle mb-0">
+    <thead class="table-light">
+      <tr><th>Login</th><th>Situação</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+      {% for funcionario in funcionarios %}
+      <tr>
+        <td>{{ funcionario.login }}</td>
+        <td>
+          {% if not funcionario.ativo %}
+          <span class="badge text-bg-secondary">Inativa</span>
+          {% elif funcionario.troca_obrigatoria %}
+          <span class="badge text-bg-warning">Aguardando troca de senha</span>
+          {% else %}
+          <span class="badge text-bg-success">Ativa</span>
+          {% endif %}
+        </td>
+        <td>
+          <form method="post" action="{{ url_for('admin.status_funcionario', usuario_id=funcionario.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-outline-secondary" type="submit" name="ativo"
+              value="{{ '0' if funcionario.ativo else '1' }}">
+              {{ 'Desativar' if funcionario.ativo else 'Reativar' }}
+            </button>
+          </form>
+          <details class="mt-2">
+            <summary>Redefinir senha</summary>
+            <form method="post" action="{{ url_for('admin.senha_funcionario', usuario_id=funcionario.id) }}"
+              class="mt-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label class="form-label" for="senha-{{ funcionario.id }}">Nova senha temporária</label>
+              <input class="form-control form-control-sm" id="senha-{{ funcionario.id }}" name="senha"
+                type="password" autocomplete="new-password"
+                minlength="{{ SENHA_MINIMA }}" maxlength="{{ SENHA_MAXIMA }}" required>
+              <button class="btn btn-sm btn-outline-primary mt-2" type="submit">Salvar senha temporária</button>
+            </form>
+          </details>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">Nenhuma conta de funcionário cadastrada.</p>
+{% endif %}
+{% endblock %}

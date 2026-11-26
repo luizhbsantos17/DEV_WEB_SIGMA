@@ -39,7 +39,7 @@
           </div>
         </div>
         <div class="col-md-3">
-          <label for="data" class="form-label">Data <span class="text-danger">*</span></label>
+          <label for="data" class="form-label">Data da movimentação <span class="text-danger">*</span></label>
           <input type="date" id="data" name="data" class="form-control" value="{{ valores.get('data', '') }}"
             max="{{ hoje() }}">
         </div>
@@ -60,16 +60,17 @@
       </button>
     </div>
     <div class="card-body" id="linhas">
-      {% for linha in linhas %}{{ linha_item(itens, linha) }}{% endfor %}
+      {% for linha in linhas %}{{ linha_item(itens_por_id.get(linha.get('item_id')), linha) }}{% endfor %}
     </div>
   </div>
 
-  <template id="modeloLinha">{{ linha_item(itens, {}) }}</template>
+  <template id="modeloLinha">{{ linha_item(none, {}) }}</template>
 
   <div class="d-flex gap-2 justify-content-end">
     <a href="{{ url_for('movimentacoes.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
     <button type="submit" class="btn btn-success" id="botaoRegistrar">Registrar entrada</button>
   </div>
 </form>
+{% include "partials/seletor_movimentacao.html" %}
 {% endif %}
 {% endblock %}

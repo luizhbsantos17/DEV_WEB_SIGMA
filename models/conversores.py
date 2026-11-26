@@ -1,6 +1,9 @@
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
+PRECISAO_ESTOQUE = Decimal("0.001")
+LIMITE_ESTOQUE = Decimal("999999999.999")
+
 
 def texto(dados, campo):
     """Lê um campo de texto do formulário sem espaços nas pontas."""
@@ -59,3 +62,15 @@ def formatar_moeda(valor):
 
 def formatar_data(valor):
     return valor.strftime("%d/%m/%Y") if valor else "-"
+
+
+def formatar_data_hora(valor):
+    return valor.strftime("%d/%m/%Y %H:%M:%S") if valor else "-"
+
+
+def decimal_para_formulario(valor):
+    return format(valor, "f").replace(".", ",") if valor is not None else ""
+
+
+def decimal_cabe_no_estoque(valor):
+    return valor.copy_abs() <= LIMITE_ESTOQUE and valor == valor.quantize(PRECISAO_ESTOQUE)

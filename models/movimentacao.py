@@ -1,10 +1,12 @@
 from datetime import date, datetime
 
-from sqlalchemy import CheckConstraint, event
+from sqlalchemy import BigInteger, CheckConstraint, cast, event, func
+from sqlalchemy.exc import OperationalError
 
 from models.conversores import (
+    LIMITE_ESTOQUE,
     data_ou_none,
-    formatar_numero,
+    decimal_cabe_no_estoque,
     para_data,
     para_decimal,
     texto,
@@ -67,29 +69,52 @@ class Movimentacao(db.Model):
 
         linhas = cls._ler_linhas(dados, erros)
 
-        if tipo == "SAIDA":
-            for item, quantidade in linhas:
-                if quantidade > item.quantidade:
-                    erros.append(
-                        f"Saldo insuficiente para {item.descricao}: disponível "
-                        f"{formatar_numero(item.quantidade)} {item.unidade_medida}."
-                    )
-
         if erros:
             return None, erros
 
         movimentacao = cls(
             tipo=tipo, data=data_movimentacao, observacao=observacao or None
         )
-        for item, quantidade in linhas:
-            movimentacao.itens.append(ItemMovimentado(item=item, quantidade=quantidade))
-            if tipo == "ENTRADA":
-                item.quantidade += quantidade
-            else:
-                item.quantidade -= quantidade
-        db.session.add(movimentacao)
-        db.session.commit()
+        try:
+            for item, quantidade in sorted(linhas, key=lambda linha: linha[0].id):
+                erro = cls._atualizar_saldo(item, quantidade, tipo)
+                if erro:
+                    db.session.rollback()
+                    return None, [erro]
+            for item, quantidade in linhas:
+                movimentacao.itens.append(
+                    ItemMovimentado(item_id=item.id, quantidade=quantidade)
+                )
+            db.session.add(movimentacao)
+            db.session.commit()
+        except OperationalError as erro:
+            db.session.rollback()
+            nome = getattr(erro.orig, "sqlite_errorname", "")
+            if nome.startswith(("SQLITE_BUSY", "SQLITE_LOCKED")) or (
+                str(erro.orig).lower() in ("database is locked", "database table is locked")
+            ):
+                return None, ["O estoque está sendo atualizado. Tente novamente."]
+            raise
         return movimentacao, []
+
+    @staticmethod
+    def _atualizar_saldo(item, quantidade, tipo):
+        tabela = ItemEstoque.__table__
+        # O SQLite pode representar NUMERIC como ponto flutuante. Compare e
+        # some milésimos inteiros para que uma saída no limite use o saldo exato.
+        saldo = cast(func.round(tabela.c.quantidade * 1000), BigInteger)
+        unidades = int(quantidade * 1000)
+        comando = tabela.update().where(tabela.c.id == item.id, tabela.c.ativo.is_(True))
+        if tipo == "SAIDA":
+            comando = comando.where(saldo >= unidades)
+            novo_saldo = saldo - unidades
+            erro = f"Saldo insuficiente ou item inativo: {item.descricao}."
+        else:
+            novo_saldo = saldo + unidades
+            comando = comando.where(novo_saldo <= int(LIMITE_ESTOQUE * 1000))
+            erro = f"Item inativo ou saldo fora do limite numérico: {item.descricao}."
+        resultado = db.session.execute(comando.values(quantidade=novo_saldo / 1000.0))
+        return erro if resultado.rowcount != 1 else None
 
     @staticmethod
     def _ler_linhas(dados, erros):
@@ -97,6 +122,9 @@ class Movimentacao(db.Model):
         linhas, vistos, preenchidas = [], set(), 0
         ids = dados.getlist("item_id")
         quantidades = dados.getlist("quantidade")
+        if len(ids) != len(quantidades):
+            erros.append("Informe um item e uma quantidade em cada linha.")
+            return []
 
         for numero, (item_id, quantidade_texto) in enumerate(
             zip(ids, quantidades), start=1
@@ -108,7 +136,10 @@ class Movimentacao(db.Model):
             preenchidas += 1
 
             item = (
-                db.session.get(ItemEstoque, int(item_id)) if item_id.isdigit() else None
+                db.session.get(ItemEstoque, int(item_id))
+                if item_id.isascii() and item_id.isdigit()
+                and len(item_id) <= 19 and int(item_id) < 2**63
+                else None
             )
             if item is None or not item.ativo:
                 erros.append(f"Linha {numero}: selecione um item ativo.")
@@ -129,6 +160,11 @@ class Movimentacao(db.Model):
                     f"Linha {numero}: informe uma quantidade maior que zero para {item.descricao}."
                 )
                 continue
+            if not decimal_cabe_no_estoque(quantidade):
+                erros.append(
+                    f"Linha {numero}: informe até nove dígitos inteiros e três casas decimais."
+                )
+                continue
 
             linhas.append((item, quantidade))
 
@@ -141,7 +177,10 @@ class Movimentacao(db.Model):
         consulta = cls.query
 
         item_id = filtros.get("item_id", "")
-        if item_id.isdigit():
+        if (
+            item_id.isascii() and item_id.isdigit()
+            and len(item_id) <= 19 and int(item_id) < 2**63
+        ):
             consulta = consulta.filter(
                 cls.itens.any(ItemMovimentado.item_id == int(item_id))
             )
